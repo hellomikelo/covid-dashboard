@@ -1,7 +1,6 @@
 import streamlit as st
 import numpy as np
 import pandas as pd
-import seaborn as sns
 import matplotlib.pyplot as plt
 
 import os
@@ -21,9 +20,11 @@ class CovidDashboard:
 		self.api = CovId19Data(force=False)
 		self._available = self.api.show_available_countries()
 	
+	# @st.cache
 	def get_world(self):
 		self.world_json = self.api.get_all_records_by_country()
 
+	# @st.cache
 	def get_us(self):
 		states_df = pd.read_csv('https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-states.csv')
 		self.latest_states = states_df[states_df.date == states_df.date.iloc[-1]]
@@ -70,7 +71,7 @@ class CovidDashboard:
 	    states geojson available at: 
 	    http://s3.amazonaws.com/bokeh_data/us_states_simplified_albers.geojson
 	    '''
-	    with open('us_states.geojson') as us_states_file:
+	    with open('geojson/us_states.geojson') as us_states_file:
 	        geojson = json.loads(us_states_file.read())
 	        for f in geojson['features']:
 	            f['properties']['name'] = f['properties']['NAME']
@@ -132,11 +133,13 @@ class CovidDashboard:
 			\n* Recovered: **{self.overall_stats['recovered']:,}**  \
 			\n* Deaths: **{self.overall_stats['deaths']:,}**")
 
+	# @st.cache
 	def show_world_numbers(self):
 		st.subheader("Top-10 countries by confirmed cases")
 		df_plot = self.get_world_plot()
 		st.bar_chart(df_plot)
 
+	# @st.cache
 	def show_country_trend(self):
 		st.subheader("Trends by country")
 		country = st.selectbox('Available countries:', self._available).lower()
@@ -157,10 +160,10 @@ class CovidDashboard:
 		# st.write('Total')
 		# st.area_chart(df_total[['confirmed', 'recovered', 'succumbed']])
 	
-	# @st.cache()
+	# @st.cache
 	def show_world_map(self):
 		palette_ = tuple(reversed(palette))
-		with open('world-geo.json') as f:
+		with open('geojson/world-geo.json') as f:
 			json_data = json.load(f)
 		color_mapper = LogColorMapper(palette=palette_)
 		
@@ -204,9 +207,10 @@ class CovidDashboard:
 
 		st.bokeh_chart(p)
 
+	# @st.cache
 	def show_us_map(self):
 		palette_ = tuple(reversed(palette))
-		with open('world-geo.json') as f:
+		with open('geojson/world-geo.json') as f:
 			json_data = json.load(f)
 		color_mapper = LogColorMapper(palette=palette_)
 
@@ -220,13 +224,15 @@ class CovidDashboard:
 
 		cases = states_df['cases'].values
 		deaths = states_df['deaths'].values
-		
+		death_pct = [x/y*100 for x,y in zip(deaths, cases)]
+
 		data=dict(
 		    x=lons,
 		    y=lats,
 		    name=states,
 		    cases=cases,
-		    deaths=deaths
+		    deaths=deaths,
+		    pct=death_pct
 			)
 
 		TOOLS = "pan,wheel_zoom,reset,hover,save"
@@ -234,7 +240,8 @@ class CovidDashboard:
 		    title="Total US COVID-19 cases",
 		    x_axis_location=None, y_axis_location=None,
 		    tooltips=[
-		    ("Name", "@name"), ("Cases", "@cases"), ("Deaths", "@deaths")
+		    ("Name", "@name"), ("Cases", "@cases"), 
+		    ("Deaths", "@deaths"), ("Percentage", "@pct%")
 		    ],
 		    active_scroll='wheel_zoom',
 		    match_aspect=True)

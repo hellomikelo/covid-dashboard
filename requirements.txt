@@ -1,0 +1,15 @@
+# To install these Python dependencies, please type:
+# > pip install -r requirements.txt
+# or if you use conda:
+# > conda install --file requirements.txt
+
+streamlit
+numpy
+matplotlib
+pandas
+matplotlib
+bokeh
+shapely
+covid-data-api
+
+
